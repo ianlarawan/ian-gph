@@ -140,17 +140,11 @@ def download_platform(
         with config_path.open() as json_file:
             config = json.load(json_file)
         
-        # Override arch if specified
         if arch:
             config['arch'] = arch
 
         platform_module = globals()[platform]
 
-        # Candidate versions (highest -> lowest) for universal robustness:
-        # - If config pins a version: only try that.
-        # - Else if override provided (retry path): try only that.
-        # - Else ask the patching CLI for compatible versions and try those.
-        # - If none returned: fall back to latest available from the store.
         pinned = (config.get("version") or "").strip()
         if override_version:
             candidates = [override_version]
@@ -183,7 +177,6 @@ def download_platform(
         logging.error(f"Unexpected error: {e}")
         return None, None, []
 
-# Update the specific download functions
 def download_apkmirror(
     app_name: str,
     cli: str,
@@ -235,4 +228,4 @@ def download_apkeditor() -> Path:
             if attempt == max_retries - 1:
                 raise RuntimeError(f"Failed to download APKEditor after {max_retries} attempts: {e}")
             logging.warning(f"APKEditor download attempt {attempt + 1} failed: {e}. Retrying...")
-            time.sleep(2)  # Wait 2 seconds before retry
+            time.sleep(2)
