@@ -91,7 +91,7 @@ def create_github_release(name, patches_name, cli_name, apk_file_paths):
 - **Morphe CLI:** v{cliver}
 
 ## Note:
-This release includes both **CLONE** (独立的/Separated package name) and **unCLONE** (Original package overlay) application packages. 
+This release includes both **CLONE** (Separated package name) and **unCLONE** (Original package overlay) application packages. 
 """
         # Formats the title string precisely to: GPH 7.76-1.0.4
         release_name = f"{convert_title(name)} {app_version}-{patchver}"
