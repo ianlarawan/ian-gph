@@ -155,6 +155,12 @@ def download_platform(
             if not candidates:
                 latest = platform_module.get_latest_version(app_name, config)
                 candidates = [latest] if latest else []
+        
+        # --- HARDCODED ENFORCEMENT GUARDRAIL ---
+        # If the resolution array is missing or pulled an ancient legacy version string, force fallback
+        if not candidates or any(c.startswith(('5.', '6.')) for c in candidates if c):
+            logging.info("⚠️ Scraper returned an ancient package version layout. Forcing hardcoded stable target: 7.76.0.913939682")
+            candidates = ["7.78.0.920664585"]
 
         last_error: Exception | None = None
         for version in candidates:

@@ -102,11 +102,19 @@ def run_build(app_name: str, source: str, arch: str, variant: str) -> str:
                 if line.startswith('-'):
                     exclude_patches.extend(["-d", line[1:].strip()])
                 elif line.startswith('+'):
-                    include_patches.extend(["-e", line[1:].strip()])
+                    patch_name = line[1:].strip()
+                    # Skip "Change package name" global loading so variants handle it independently
+                    if patch_name.lower() == "change package name":
+                        continue
+                    include_patches.extend(["-e", patch_name])
 
-    # --- INJECT CLONE VARIANT PATCH OPTIONS DYNAMICALLY ---
+    # --- VARIANT-SPECIFIC PATCH CONFIGURATION ---
     if variant == "CLONE":
+        # Force add it strictly for the CLONE variant along with the required options options
         include_patches.extend(["-e", "Change package name", "-O", "packageName=morphe.google.photos"])
+    elif variant == "unCLONE":
+        # Explicitly force disable it for the unCLONE variant to prevent leaks
+        exclude_patches.extend(["-d", "Change package name"])
 
     for attempt_idx, ver in enumerate(versions_to_try):
         if attempt_idx > 0:
@@ -162,7 +170,13 @@ def run_build(app_name: str, source: str, arch: str, variant: str) -> str:
                     ]
                     utils.run_process(morphe_cmd, capture=True, stream=True)
                 except subprocess.CalledProcessError:
-                    morphe_cmd = ["java", "-jar", str(cli), "--patches", str(patches), "--input", str(input_apk), "--output", str(output_apk)]
+                    morphe_cmd = [
+                        "java", "-jar", str(cli),
+                        "patch",
+                        "--patches", str(patches),
+                        "--input", str(input_apk),
+                        "--output", str(output_apk)
+                    ]
                     utils.run_process(morphe_cmd, capture=True, stream=True)
             else:
                 cli_name = Path(cli).name.lower()
@@ -181,9 +195,6 @@ def run_build(app_name: str, source: str, arch: str, variant: str) -> str:
         input_apk.unlink(missing_ok=True)
         patchver = release.extract_version(str(patches))
         
-        # --- MATCH EXPLICIT GOOGLE PHOTOS EXTENDED FILENAME LAYOUT ---
-        # Formats output exactly to: morphe-gphotos_CLONE_7.76.0_arm64-v8a_1.0.4.apk
-        # Standardizes version layouts by trimming build-subnumbers down to clean major.minor chains
         clean_version_match = re.match(r'^(\d+\.\d+\.\d+)', version)
         display_version = clean_version_match.group(1) if clean_version_match else version
         
@@ -227,7 +238,6 @@ def main():
                 arches = config["arches"]
                 break
 
-    # --- TWO-VARIANT MATRIX AGGREGATOR RUN ---
     variants = ["CLONE", "unCLONE"]
     built_apks = []
 
@@ -239,7 +249,6 @@ def main():
                 built_apks.append(apk_path)
                 print(f"✅ Built {variant} variant: {Path(apk_path).name}")
 
-    # Pass all built binaries together into the updated release tool block
     if built_apks:
         release.create_github_release(app_name, "patches", "cli", built_apks)
 
