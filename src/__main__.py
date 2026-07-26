@@ -66,24 +66,25 @@ def run_build(app_name: str, source: str, arch: str = "universal") -> str:
 
     # FIND FILES BASED ON DETECTED TYPE
     if is_morphe:
-        # Find Morphe files - prefer non-dev version
-        cli = utils.find_file(download_files, contains="morphe-desktop", suffix=".jar", exclude=["dev"])
-        if not cli:
-            # Fallback to any Morphe CLI
-            cli = utils.find_file(download_files, contains="morphe", suffix=".jar")
-        
-        patches = utils.find_file(download_files, contains="patches", suffix=".mpp")
-        if not patches:
-            # Fallback to any .mpp file
-            patches = utils.find_file(download_files, suffix=".mpp")
-    else:
-        # Find ReVanced files
-        cli = utils.find_file(download_files, contains="revanced-cli", suffix=".jar")
-        patches = utils.find_file(download_files, contains="patches", suffix=".rvp")
-        
-        if not patches:
-            # Try .jar extension for patches
-            patches = utils.find_file(download_files, contains="patches", suffix=".jar")
+                logging.info("Using Morphe patching system...")
+                try:
+                    morphe_cmd = [
+                        "java", "-jar", str(cli),
+                        "patch", "--patches", str(patches),
+                        "--out", str(output_apk), str(input_apk),
+                        "--continue-on-error",
+                        *exclude_patches, *include_patches
+                    ]
+                    utils.run_process(morphe_cmd, capture=True, stream=True)
+                except subprocess.CalledProcessError:
+                    morphe_cmd = [
+                        "java", "-jar", str(cli),
+                        "patch", "--patches", str(patches),
+                        "--input", str(input_apk),
+                        "--output", str(output_apk),
+                        "--continue-on-error"
+                    ]
+                    utils.run_process(morphe_cmd, capture=True, stream=True)
 
     # Validate tools
     if not cli:
