@@ -181,7 +181,7 @@ def run_build(app_name: str, source: str, arch: str = "universal") -> list[str]:
             generated_apks = []
             variants = [
                 {"label": "unCLONE", "args": ["-d", "Change package name"]},
-                {"label": "CLONE", "args": ["-e", "Change package name"]}
+                {"label": "CLONE", "args": ["-e", "Change package name", "-O", "packageName=morphe.google.photos"]}
             ]
 
             for variant in variants:
