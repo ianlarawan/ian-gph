@@ -76,15 +76,22 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install requests beautifulsoup4
-      
+          
+      - name: Setup Custom Signing Keystore
+        run: |
+          echo "${{ secrets.SIGNING_KEY }}" | base64 --decode > /tmp/custom.keystore
+          
       - name: Build APK
         env:
           APP_NAME: ${{ inputs.app_name }}
           SOURCE: ${{ inputs.source }}
           ARCH: ${{ inputs.architecture }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          KS_PATH: "/tmp/custom.keystore"
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
         run: |
-          echo "🔧 Building ${{ inputs.app_name }} with ${{ inputs.source }} for ${{ inputs.architecture }} architecture..."
+          echo "Building ${{ inputs.app_name }} with ${{ inputs.source }} for ${{ inputs.architecture }} architecture..."
           python -m src
       
       - name: Find Built APK
