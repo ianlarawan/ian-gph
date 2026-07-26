@@ -67,6 +67,12 @@ jobs:
               break
             fi
           done
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
       
       - name: Install Python
         uses: actions/setup-python@v5
