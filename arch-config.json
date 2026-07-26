@@ -2,6 +2,6 @@
   {
     "app_name": "google-photos",
     "source": "rookie",
-    "arches": ["arm64-v8a"]
+    "arches": ["universal"]
   }
 ]
