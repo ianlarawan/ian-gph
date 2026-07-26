@@ -64,9 +64,9 @@ def download_required(source: str) -> tuple[list[Path], str]:
                 continue
 
             # Keep the existing Morphe-specific asset filtering.
-            if "morphe-patches" in entry_name or "morphe-cli" in entry_name:
+            if "morphe-patches" in entry_name or "morphe-desktop" in entry_name:
                 if asset_name.endswith(".mpp") or (
-                    "morphe-cli" in asset_name and asset_name.endswith(".jar")
+                    "morphe-desktop" in asset_name and asset_name.endswith(".jar")
                 ):
                     downloaded_files.append(download_resource(asset_url))
             else:
@@ -140,11 +140,17 @@ def download_platform(
         with config_path.open() as json_file:
             config = json.load(json_file)
         
+        # Override arch if specified
         if arch:
             config['arch'] = arch
 
         platform_module = globals()[platform]
 
+        # Candidate versions (highest -> lowest) for universal robustness:
+        # - If config pins a version: only try that.
+        # - Else if override provided (retry path): try only that.
+        # - Else ask the patching CLI for compatible versions and try those.
+        # - If none returned: fall back to latest available from the store.
         pinned = (config.get("version") or "").strip()
         if override_version:
             candidates = [override_version]
@@ -155,12 +161,6 @@ def download_platform(
             if not candidates:
                 latest = platform_module.get_latest_version(app_name, config)
                 candidates = [latest] if latest else []
-        
-        # --- HARDCODED ENFORCEMENT GUARDRAIL ---
-        # If the resolution array is missing or pulled an ancient legacy version string, force fallback
-        if not candidates or any(c.startswith(('5.', '6.')) for c in candidates if c):
-            logging.info("⚠️ Scraper returned an ancient package version layout. Forcing hardcoded stable target: 7.76.0.913939682")
-            candidates = ["7.78.0.920664585"]
 
         last_error: Exception | None = None
         for version in candidates:
@@ -183,6 +183,7 @@ def download_platform(
         logging.error(f"Unexpected error: {e}")
         return None, None, []
 
+# Update the specific download functions
 def download_apkmirror(
     app_name: str,
     cli: str,
@@ -234,4 +235,4 @@ def download_apkeditor() -> Path:
             if attempt == max_retries - 1:
                 raise RuntimeError(f"Failed to download APKEditor after {max_retries} attempts: {e}")
             logging.warning(f"APKEditor download attempt {attempt + 1} failed: {e}. Retrying...")
-            time.sleep(2)
+            time.sleep(2)  # Wait 2 seconds before retry
