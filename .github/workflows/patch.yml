@@ -124,6 +124,12 @@ jobs:
           path: tools/
           key: revanced-tools-${{ hashFiles('patch-config.json', 'arch-config.json') }}
 
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
       - name: Install Python
         uses: actions/setup-python@v5
         with:
@@ -140,8 +146,8 @@ jobs:
 
       - name: Execute Morphe Auto Build Pipeline
         env:
-          APP_NAME: google-photos
-          SOURCE: rookie
+          APP_NAME: ${{ matrix.app_name }}
+          SOURCE: ${{ matrix.source }}
           KS_PATH: "/tmp/custom.keystore"
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
