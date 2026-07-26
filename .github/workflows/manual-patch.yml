@@ -54,15 +54,8 @@ jobs:
             config_file="$dir/${{ inputs.app_name }}.json"
             if [ -f "$config_file" ]; then
               echo "Updating $config_file with version ${{ inputs.version }}"
-              # Update JSON with specific version
-              python -c "
-              import json, sys, os
-              with open('$config_file', 'r') as f:
-                  config = json.load(f)
-              config['version'] = '${{ inputs.version }}'
-              with open('$config_file', 'w') as f:
-                  json.dump(config, f, indent=2)
-              "
+              # Use jq to safely update the JSON file
+              jq '.version = "${{ inputs.version }}"' "$config_file" > tmp.json && mv tmp.json "$config_file"
               echo "Updated: $config_file"
               break
             fi
@@ -225,13 +218,7 @@ jobs:
             config_file="$dir/${{ inputs.app_name }}.json"
             if [ -f "$config_file" ]; then
               echo "Resetting version in $config_file"
-              python -c "
-              import json, sys, os
-              with open('$config_file', 'r') as f:
-                  config = json.load(f)
-              config['version'] = ''
-              with open('$config_file', 'w') as f:
-                  json.dump(config, f, indent=2)
-              "
+              # Use jq to safely wipe the version string
+              jq '.version = ""' "$config_file" > tmp.json && mv tmp.json "$config_file"
             fi
           done
