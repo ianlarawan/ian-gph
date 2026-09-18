@@ -88,16 +88,23 @@ def run_build(app_name: str, source: str, arch: str = "universal") -> list[str]:
         downloader.download_aptoide
     ]
 
-    input_apk = None
+input_apk = None
     version = None
     candidates: list[str] = []
     used_method = None
     
-    for method in download_methods:
-        input_apk, version, candidates = method(app_name, str(cli), str(patches), arch)
-        if input_apk:
-            used_method = method
-            break
+    manual_files = list(Path(".").glob("manual_input.*"))
+    if manual_files:
+        input_apk = manual_files[0]
+        version = getenv("VERSION", "manual")
+        used_method = True
+        logging.info(f"Using manually provided source file: {input_apk.name}")
+    else:
+        for method in download_methods:
+            input_apk, version, candidates = method(app_name, str(cli), str(patches), arch)
+            if input_apk:
+                used_method = method
+                break
 
     if input_apk is None or not used_method or not version:
         logging.error(f"❌ Failed to download APK for {app_name}")
