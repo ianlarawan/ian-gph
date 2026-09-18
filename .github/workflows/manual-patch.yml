@@ -35,11 +35,6 @@ on:
           - armeabi-v7a
           - universal
         default: 'universal'
-      replace_in_release:
-        description: 'Replace APK in existing release'
-        required: true
-        type: boolean
-        default: true
 
 jobs:
   manual-patch:
@@ -134,92 +129,6 @@ jobs:
         with:
           name: manual-apk-${{ inputs.app_name }}-${{ inputs.architecture }}
           path: "*.apk"
-      
-      - name: Check Existing Release
-        if: ${{ inputs.replace_in_release == true }}
-        id: check-release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if gh release view latest >/dev/null 2>&1; then
-            echo "✅ Release 'latest' exists"
-            echo "release_exists=true" >> $GITHUB_OUTPUT
-          else
-            echo "❌ Release 'latest' does not exist"
-            echo "release_exists=false" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Update Release
-        if: ${{ inputs.replace_in_release == true }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "🔄 Updating release efficiently..."
-          
-          if [ "${{ steps.check-release.outputs.release_exists }}" == "true" ]; then
-            gh release view latest --json assets --jq '.assets[].name' > current_assets.txt
-          else
-            touch current_assets.txt
-          fi
-          
-          for apk in *.apk; do
-            echo "$apk" >> current_assets.txt
-          done
-          
-          cat > release_notes.md << EOF
-          # Morphe APKs
-          
-          ## 📱 Available Apps
-          EOF
-          
-          sort -u current_assets.txt | while read filename; do
-            echo "- $filename" >> release_notes.md
-          done
-          
-          cat >> release_notes.md << EOF
-          
-          ---
-          
-          **Last Update:** $(date)
-          **Updated App:** ${{ inputs.app_name }}
-          **Architecture:** ${{ inputs.architecture }}
-          **Source:** ${{ inputs.source }}
-          
-          Auto-updates daily at 6 AM UTC.
-          EOF
-          
-          if [ "${{ steps.check-release.outputs.release_exists }}" == "true" ]; then
-            echo "⬆️ Uploading new assets (clobbering existing)..."
-            gh release upload latest *.apk --clobber
-            
-            echo "📝 Updating release title and notes..."
-            gh release edit latest \
-              --title "Morphe APKs - $(date +'%Y-%m-%d %H:%M')" \
-              --notes-file release_notes.md
-              
-          else
-            echo "🚀 Creating new release..."
-            gh release create "latest" \
-              --title "Morphe APKs - $(date +'%Y-%m-%d %H:%M')" \
-              --notes-file release_notes.md \
-              *.apk \
-              --latest
-          fi
-          
-          echo "✅ Release updated successfully!"
-      
-      - name: Show Download Links
-        if: ${{ inputs.replace_in_release == true }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          release_url=$(gh release view latest --json url --jq .url)
-          echo "🔗 Updated Release URL: $release_url"
-          echo ""
-          echo "📦 Direct APK links:"
-          for apk in *.apk; do
-            echo "  - $release_url/download/$apk"
-          done
       
       - name: Cleanup Version Override
         if: ${{ inputs.version != '' && always() }}
