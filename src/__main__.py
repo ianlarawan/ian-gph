@@ -88,7 +88,7 @@ def run_build(app_name: str, source: str, arch: str = "universal") -> list[str]:
         downloader.download_aptoide
     ]
 
-input_apk = None
+    input_apk = None
     version = None
     candidates: list[str] = []
     used_method = None
